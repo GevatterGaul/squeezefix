@@ -46,13 +46,20 @@ def has_adobergb_colorspace(img: Image) -> bool:
            img.metadata['exif:thumbnail:InteroperabilityIndex'] == 'R03'
 
 
+def has_srgb_colorspace(img: Image) -> bool:
+    return 'exif:ColorSpace' in img.metadata and \
+           img.metadata['exif:ColorSpace'] == '1'
+
+
 def rescale_jpeg(img: Image, filepath: Path) -> None:
     new_height, new_width = calculate_new_size(img)
 
     if has_adobergb_colorspace(img):
         resize_adobergb(img, new_height, new_width)
-    else:
+    elif has_srgb_colorspace(img):
         resize_srgb(img, new_height, new_width)
+    else:
+        print(f'Skipping "{filepath.as_posix()}": unknown color space')
 
     new_path = Path(filepath.parent, filepath.stem + '_resized.jpg')
 
