@@ -5,6 +5,7 @@ from posix import DirEntry
 from pathlib import Path
 from typing import Tuple, Union
 
+import piexif
 from wand.image import Image
 
 
@@ -51,17 +52,29 @@ def has_srgb_colorspace(img: Image) -> bool:
            img.metadata['exif:ColorSpace'] == '1'
 
 
+def adjust_exif(img: Image, width: int, height: int):
+    exif_bytes = img.profiles['exif']
+    exif = piexif.load(exif_bytes)
+
+    exif['Exif'][piexif.ExifIFD.PixelXDimension] = width
+    exif['Exif'][piexif.ExifIFD.PixelYDimension] = height
+
+    new_exif_bytes = piexif.dump(exif)
+    img.profiles['exif'] = new_exif_bytes
+
+
 def rescale_jpeg(img: Image, filepath: Path) -> None:
     new_height, new_width = calculate_new_size(img)
+    new_path = Path(filepath.parent, filepath.stem + '_resized.jpg')
 
     if has_adobergb_colorspace(img):
-        resize_adobergb(img, new_height, new_width)
+        resize_adobergb(img, new_width, new_height)
     elif has_srgb_colorspace(img):
-        resize_srgb(img, new_height, new_width)
+        resize_srgb(img, new_width, new_height)
     else:
         print(f'Skipping "{filepath.as_posix()}": unknown color space')
 
-    new_path = Path(filepath.parent, filepath.stem + '_resized.jpg')
+    adjust_exif(img, new_width, new_height)
 
     img.compression_quality = 95
     img.save(filename=new_path.as_posix())
@@ -80,7 +93,7 @@ def calculate_new_size(img: Image) -> Tuple[int, int]:
     return new_height, new_width
 
 
-def resize_srgb(img: Image, new_height: int, new_width: int):
+def resize_srgb(img: Image, new_width: int, new_height: int):
     img.depth = 16
     img.transform_colorspace('rgb')
     img.resize(new_width, new_height, filter='lanczos2')
@@ -88,7 +101,7 @@ def resize_srgb(img: Image, new_height: int, new_width: int):
     img.depth = 8
 
 
-def resize_adobergb(img: Image, new_height: int, new_width: int):
+def resize_adobergb(img: Image, new_width: int, new_height: int):
     img.depth = 16
     img.gamma(LINEAR_RGB_GAMMA)
     img.resize(new_width, new_height, filter='lanczos2')

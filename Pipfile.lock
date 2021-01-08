@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "86f4fc82634851db0e9c7d41b297c76a75351311215326e9f1a950065085b9a4"
+            "sha256": "d39d291bc5bdf317b50259841632091b8d1c615ef05e08fcfc1c454b140a9b0c"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -16,20 +16,13 @@
         ]
     },
     "default": {
-        "exifread": {
+        "piexif": {
             "hashes": [
-                "sha256:3ef8725efdb66530b4b3cd1c4ba5d3f3b35a7872137d2c707f711971f8ebf809",
-                "sha256:a0f74af5040168d3883bbc980efe26d06c89f026dc86ba28eb34107662d51766"
+                "sha256:3bc435d171720150b81b15d27e05e54b8abbde7b4242cddd81ef160d283108b6",
+                "sha256:83cb35c606bf3a1ea1a8f0a25cb42cf17e24353fd82e87ae3884e74a302a5f1b"
             ],
             "index": "pypi",
-            "version": "==2.3.2"
-        },
-        "pillow-simd": {
-            "hashes": [
-                "sha256:c27907af0e7ede1ceed281719e722e7dbf3e1dbfe561373978654a6b64896cb7"
-            ],
-            "index": "pypi",
-            "version": "==7.0.0.post3"
+            "version": "==1.1.3"
         },
         "wand": {
             "hashes": [
