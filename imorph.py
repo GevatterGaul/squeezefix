@@ -13,6 +13,7 @@ POSSIBLE_ANAMORPHIC_FOCAL_LENGTHS = [24, 50]
 ANAMORPHIC_SCALE_FACTOR = 1.33
 LINEAR_RGB_GAMMA = 0.4547069271758437
 ADOBE_RGB_GAMMA = 2.19921875
+JPEG_COMPRESSION_QUALITY = 95
 
 
 def is_jpeg(file: DirEntry) -> bool:
@@ -68,15 +69,17 @@ def rescale_jpeg(img: Image, filepath: Path) -> None:
     new_path = Path(filepath.parent, filepath.stem + '_resized.jpg')
 
     if has_adobergb_colorspace(img):
-        resize_adobergb(img, new_width, new_height)
+        resize_op = resize_adobergb
     elif has_srgb_colorspace(img):
-        resize_srgb(img, new_width, new_height)
+        resize_op = resize_srgb
     else:
         print(f'Skipping "{filepath.as_posix()}": unknown color space')
+        return
 
     adjust_exif(img, new_width, new_height)
+    resize_op(img, new_width, new_height)
 
-    img.compression_quality = 95
+    img.compression_quality = JPEG_COMPRESSION_QUALITY
     img.save(filename=new_path.as_posix())
 
 
