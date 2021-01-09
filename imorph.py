@@ -42,10 +42,14 @@ def is_anamorphic(img: Image) -> bool:
 
 
 def has_adobergb_colorspace(img: Image) -> bool:
-    return 'exif:ColorSpace' in img.metadata and \
-           img.metadata['exif:ColorSpace'] == '65535' and \
-           'exif:thumbnail:InteroperabilityIndex' in img.metadata and \
-           img.metadata['exif:thumbnail:InteroperabilityIndex'] == 'R03'
+    if 'exif:ColorSpace' in img.metadata and img.metadata['exif:ColorSpace'] == '65535':
+        exif_bytes = img.profiles['exif']
+        exif = piexif.load(exif_bytes)
+
+        if 'Interop' in exif:
+            return exif['Interop'][1] == b'R03'
+
+    return False
 
 
 def has_srgb_colorspace(img: Image) -> bool:
