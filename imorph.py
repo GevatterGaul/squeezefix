@@ -129,11 +129,11 @@ def get_scaled_size(img: Image, new_width: int) -> (int, int):
     return new_width, round(new_width*img.height/img.width)
 
 
-def set_jpeg_thumbnail(filepath: Path, thumbnail_path: Path):
+def set_and_delete_jpeg_thumbnail(filepath: Path, thumbnail_path: Path, thumbnail_id: str):
     run([
         'exiftool',
         '-overwrite_original_in_place',
-        f'-ThumbnailImage<={thumbnail_path.as_posix()}',
+        f'-{thumbnail_id}<={thumbnail_path.as_posix()}',
         filepath.as_posix()
     ], capture_output=True).check_returncode()
     thumbnail_path.unlink()
@@ -142,7 +142,7 @@ def set_jpeg_thumbnail(filepath: Path, thumbnail_path: Path):
 def generate_and_set_jpeg_thumbnails(img: Image, filepath: Path) -> None:
     thumbnail_path = Path(filepath.parent, filepath.stem + '_thumbnail.jpg')
     generate_jpeg_thumbnail(img, thumbnail_path, 160, 120)
-    set_jpeg_thumbnail(filepath, thumbnail_path)
+    set_and_delete_jpeg_thumbnail(filepath, thumbnail_path, 'ThumbnailImage')
 
 
 def generate_jpeg_thumbnail(img: Image, path: Path, width: int, height: int = None):
@@ -209,33 +209,24 @@ def handle_raf(filepath: Path):
 
 
 def add_thumbnails_to_dng(img: Image, filepath: Path):
+    jpeg = generate_jpeg_from_raw(img)
+
+    preview_path = Path(filepath.parent, filepath.stem + '_PreviewImage.jpg')
+    generate_jpeg_thumbnail(jpeg, preview_path, 1024)
+    set_and_delete_jpeg_thumbnail(filepath, preview_path, 'PreviewImage')
+
+    jpeg_path = Path(filepath.parent, filepath.stem + '_JpgFromRaw.jpg')
+    jpeg.save(filename=jpeg_path.as_posix())
+    set_and_delete_jpeg_thumbnail(filepath, jpeg_path, 'JpgFromRaw')
+
+
+def generate_jpeg_from_raw(img: Image):
     jpeg = img.clone()
     jpeg.format = 'jpeg'
     jpeg.compression_quality = 95
     width, height = calculate_new_size(img)
     resize_srgb(jpeg, width, height)
-
-    preview_path = Path(filepath.parent, filepath.stem + '_PreviewImage.jpg')
-    generate_jpeg_thumbnail(jpeg, preview_path, 1024)
-
-    run([
-        'exiftool',
-        '-overwrite_original_in_place',
-        f'-PreviewImage<={preview_path.as_posix()}',
-        filepath.as_posix()
-    ], capture_output=False).check_returncode()
-    preview_path.unlink()
-
-    jpeg_path = Path(filepath.parent, filepath.stem + '_JpgFromRaw.jpg')
-    jpeg.save(filename=jpeg_path.as_posix())
-
-    run([
-        'exiftool',
-        '-overwrite_original_in_place',
-        f'-JpgFromRaw<={jpeg_path.as_posix()}',
-        filepath.as_posix()
-    ]).check_returncode()
-    jpeg_path.unlink()
+    return jpeg
 
 
 def convert_raf(filepath: Path) -> Path:
