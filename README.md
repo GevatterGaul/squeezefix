@@ -31,14 +31,14 @@ pipenv install
 Convert all files in the ```raw``` directory and save the original files in ```raw/originals```:
 
 ```bash
-python anamorfix.py -m raw/
+python squeezefix.py -m raw/
 ```
 
 Other options:
 
 ```
 # python anamorfix.py -h
-usage: anamorfix.py [-h] [-j] [-r] [-m] path
+usage: squeezefix.py [-h] [-j] [-r] [-m] path
 
 positional arguments:
   path
