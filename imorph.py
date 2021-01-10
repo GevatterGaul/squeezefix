@@ -71,17 +71,14 @@ def adjust_exif(img: Image, width: int, height: int):
     img.profiles['exif'] = new_exif_bytes
 
 
-def rescale_jpeg(img: Image, filepath: Path) -> Optional[Path]:
+def rescale_srbg_or_adobergb_jpeg(img: Image, filepath: Path) -> Optional[Path]:
     new_height, new_width = calculate_new_size(img)
     new_path = Path(filepath.parent, filepath.stem + '_resized.jpg')
 
-    if has_adobergb_colorspace(img):
-        resize_op = resize_adobergb
-    elif has_srgb_colorspace(img):
+    if has_srgb_colorspace(img):
         resize_op = resize_srgb
     else:
-        print(f'Skipping "{filepath.as_posix()}": unknown color space')
-        return None
+        resize_op = resize_adobergb
 
     adjust_exif(img, new_width, new_height)
     resize_op(img, new_width, new_height)
@@ -161,9 +158,11 @@ def imorph(path: str):
             if isinstance(entry, DirEntry) and is_jpeg(entry):
                 with Image(filename=entry.path) as img:
                     if is_anamorphic(img):
-                        new_path = rescale_jpeg(img, Path(entry.path))
-                        if new_path is not None:
+                        if (has_srgb_colorspace(img) or has_adobergb_colorspace(img)):
+                            new_path = rescale_srbg_or_adobergb_jpeg(img, Path(entry.path))
                             generate_and_set_jpeg_thumbnails(img, new_path)
+                        else:
+                            print(f'Skipping "{entry.path}": unknown color space')
 
 
 if __name__ == '__main__':
