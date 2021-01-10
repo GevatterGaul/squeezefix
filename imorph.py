@@ -29,17 +29,53 @@ def is_raf(file: DirEntry) -> bool:
     return name.endswith('.raf')
 
 
-def convert_exif_number(enum: str) -> Union[float, None]:
-    if enum == '0/0':
+def convert_raf_fnumber(s: str) -> Union[float, None]:
+    if s == 'F/nan':
         return None
-    numerator, denominator = enum.split('/')
-    return float(numerator)/float(denominator)
+
+    _, fnum = s.split('/')
+    return float(fnum.replace(',', '.'))
+
+
+def convert_jpeg_fnumber(s: str) -> Union[float, None]:
+    if s == '0/0':
+        return None
+
+    numerator, denominator = s.split('/')
+    return float(numerator) / float(denominator)
+
+
+def convert_fnumber(s: str) -> Union[float, None]:
+    if s.startswith('F'):
+        return convert_raf_fnumber(s)
+    return convert_jpeg_fnumber(s)
+
+
+def convert_raf_focallength(s: str) -> int:
+    flength, _ = s.split(',')
+    return int(flength)
+
+
+def convert_jpeg_focallength(s: str) -> int:
+    numerator, denominator = s.split('/')
+    return round(float(numerator) / float(denominator))
+
+
+def convert_focallength(s: str):
+    if s.endswith('mm'):
+        return convert_raf_focallength(s)
+    return convert_jpeg_focallength(s)
 
 
 def is_anamorphic(img: Image) -> bool:
-    focal_length_match = 'exif:FocalLength' in img.metadata and \
-                         int(convert_exif_number(img.metadata['exif:FocalLength'])) in POSSIBLE_ANAMORPHIC_FOCAL_LENGTHS
-    fnumber_match = 'exif:FNumber' in img.metadata and convert_exif_number(img.metadata['exif:FNumber']) is None
+    if img.format == 'RAF':
+        focal_length_match = 'dng:FocalLength' in img.metadata and \
+                             convert_focallength(img.metadata['dng:FocalLength']) in POSSIBLE_ANAMORPHIC_FOCAL_LENGTHS
+        fnumber_match = 'dng:Aperture' in img.metadata and convert_fnumber(img.metadata['dng:Aperture']) is None
+    else:
+        focal_length_match = 'exif:FocalLength' in img.metadata and \
+                             convert_focallength(img.metadata['exif:FocalLength']) in POSSIBLE_ANAMORPHIC_FOCAL_LENGTHS
+        fnumber_match = 'exif:FNumber' in img.metadata and convert_fnumber(img.metadata['exif:FNumber']) is None
 
     return focal_length_match and fnumber_match
 
@@ -152,17 +188,38 @@ def resize_adobergb(img: Image, new_width: int, new_height: int):
     img.depth = 8
 
 
+def handle_jpeg(filepath: Path):
+    with Image(filename=filepath.as_posix()) as img:
+        if is_anamorphic(img):
+            if (has_srgb_colorspace(img) or has_adobergb_colorspace(img)):
+                new_path = rescale_srbg_or_adobergb_jpeg(img, filepath)
+                generate_and_set_jpeg_thumbnails(img, new_path)
+            else:
+                print(f'Skipping "{filepath.as_posix()}": unknown color space')
+
+
+def handle_raf(filepath: Path):
+    with Image(filename=filepath.as_posix()) as img:
+        if is_anamorphic(img):
+            convert_raf(filepath)
+
+
+def convert_raf(filepath: Path):
+    run([
+        '/Applications/Adobe DNG Converter.app/Contents/MacOS/Adobe DNG Converter',
+        '-p2',
+        filepath.as_posix()
+    ], capture_output=True).check_returncode()
+
+
 def imorph(path: str):
     with scandir(path) as dir:
         for entry in dir:
-            if isinstance(entry, DirEntry) and is_jpeg(entry):
-                with Image(filename=entry.path) as img:
-                    if is_anamorphic(img):
-                        if (has_srgb_colorspace(img) or has_adobergb_colorspace(img)):
-                            new_path = rescale_srbg_or_adobergb_jpeg(img, Path(entry.path))
-                            generate_and_set_jpeg_thumbnails(img, new_path)
-                        else:
-                            print(f'Skipping "{entry.path}": unknown color space')
+            if isinstance(entry, DirEntry):
+                if is_jpeg(entry):
+                    handle_jpeg(Path(entry.path))
+                elif is_raf(entry):
+                    handle_raf(Path(entry.path))
 
 
 if __name__ == '__main__':
