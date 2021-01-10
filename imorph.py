@@ -7,6 +7,7 @@ from typing import Tuple, Union
 
 import piexif
 from wand.image import Image
+from wand.color import Color
 
 
 POSSIBLE_ANAMORPHIC_FOCAL_LENGTHS = [24, 50]
@@ -14,6 +15,7 @@ ANAMORPHIC_SCALE_FACTOR = 1.33
 LINEAR_RGB_GAMMA = 0.4547069271758437
 ADOBE_RGB_GAMMA = 2.19921875
 JPEG_COMPRESSION_QUALITY = 95
+BLACK = Color('black')
 
 
 def is_jpeg(file: DirEntry) -> bool:
@@ -107,7 +109,7 @@ def generate_jpeg_thumbnail(img: Image, path: Path, width: int, height: int):
     thumbnail_height_offset = round((height - thumbnail_height) / 2) * -1
 
     thumbnail.thumbnail(thumbnail_width, thumbnail_height)
-    thumbnail.background_color = 'black'
+    thumbnail.background_color = BLACK
     thumbnail.extent(width, height, 0, thumbnail_height_offset)
     thumbnail.compression_quality = 75
 
