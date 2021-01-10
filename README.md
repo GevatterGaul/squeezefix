@@ -1,8 +1,14 @@
 # Motivation
 
-Script to resize and sort JPEG and RAW Fuji Files that have been captured with anamorphic lenses.
+Script to resize and sort Fuji JPEG and RAW files that have been captured with anamorphic lenses.
 
 The intended use case is to run the script over a directory of original files. Then import the resulting files into your raw converter of choice.
+
+# Compatibility
+
+Developed for Fuji Cameras and SIRUI anamorphic lenses.
+
+Tested on Fuji X-T10 and SIRUI 50mm 1.8 anamorphic (squeeze factor 1.33).
 
 # Requirements
 
