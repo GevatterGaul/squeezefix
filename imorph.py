@@ -5,6 +5,7 @@ from posix import DirEntry
 from pathlib import Path
 from typing import Tuple, Union, Optional
 from subprocess import run
+from shutil import move
 
 import piexif
 from wand.image import Image
@@ -190,22 +191,39 @@ def resize_adobergb(img: Image, new_width: int, new_height: int):
     img.depth = 8
 
 
-def handle_jpeg(filepath: Path):
+def ensure_originals_folder(filepath: Path) -> Path:
+    target_folder = Path(filepath.parent, 'originals')
+    target_folder.mkdir(exist_ok=True)
+    return target_folder
+
+
+def handle_jpeg(filepath: Path, move_original: bool = False):
     with Image(filename=filepath.as_posix()) as img:
         if is_anamorphic(img):
             if (has_srgb_colorspace(img) or has_adobergb_colorspace(img)):
                 new_path = rescale_srbg_or_adobergb_jpeg(img, filepath)
                 generate_and_set_jpeg_thumbnails(img, new_path)
+
+                if move_original:
+                    target_folder = ensure_originals_folder(filepath)
+                    target_filepath = Path(target_folder, filepath.name)
+                    move(filepath, target_filepath)
+                    move(new_path, filepath)
             else:
                 print(f'Skipping "{filepath.as_posix()}": unknown color space')
 
 
-def handle_raf(filepath: Path):
+def handle_raf(filepath: Path, move_original: bool = False):
     with Image(filename=filepath.as_posix()) as img:
         if is_anamorphic(img):
             converted_dng_path = convert_raf(filepath)
             set_dng_anamorphic_ratio(converted_dng_path)
             add_thumbnails_to_dng(img, converted_dng_path)
+
+            if move_original:
+                target_folder = ensure_originals_folder(filepath)
+                target_filepath = Path(target_folder, filepath.name)
+                move(filepath, target_filepath)
 
 
 def add_thumbnails_to_dng(img: Image, filepath: Path):
@@ -249,16 +267,16 @@ def set_dng_anamorphic_ratio(filepath: Path):
 
 
 
-def imorph(path: str, only_jpegs: bool = False, only_raws: bool = False):
+def imorph(path: str, only_jpegs: bool = False, only_raws: bool = False, move_originals: bool = False):
     with scandir(path) as dir:
         for entry in dir:
             if isinstance(entry, DirEntry):
                 filepath = Path(entry.path)
 
                 if is_jpeg(entry) and not only_raws:
-                    handle_jpeg(filepath)
+                    handle_jpeg(filepath, move_originals)
                 elif is_raf(entry) and not only_jpegs:
-                    handle_raf(filepath)
+                    handle_raf(filepath, move_originals)
 
 
 if __name__ == '__main__':
@@ -266,6 +284,7 @@ if __name__ == '__main__':
     parser.add_argument('path')
     parser.add_argument('-j', '--only-jpeg', help='Only consider jpeg images', action='store_true')
     parser.add_argument('-r', '--only-raw', help='Only consider raw images', action='store_true')
+    parser.add_argument('-m', '--move-originals', help='Move originals to subfolder', action='store_true')
     args = parser.parse_args()
 
-    imorph(args.path, args.only_jpeg, args.only_raw)
+    imorph(args.path, args.only_jpeg, args.only_raw, args.move_originals)
