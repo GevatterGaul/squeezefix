@@ -4,6 +4,7 @@ from os import scandir
 from posix import DirEntry
 from pathlib import Path
 from typing import Tuple, Union
+from subprocess import run
 
 import piexif
 from wand.image import Image
@@ -70,7 +71,7 @@ def adjust_exif(img: Image, width: int, height: int):
     img.profiles['exif'] = new_exif_bytes
 
 
-def rescale_jpeg(img: Image, filepath: Path) -> None:
+def rescale_jpeg(img: Image, filepath: Path) -> Path:
     new_height, new_width = calculate_new_size(img)
     new_path = Path(filepath.parent, filepath.stem + '_resized.jpg')
 
@@ -88,18 +89,27 @@ def rescale_jpeg(img: Image, filepath: Path) -> None:
     img.compression_quality = JPEG_COMPRESSION_QUALITY
     img.save(filename=new_path.as_posix())
 
+    return new_path
+
 
 def get_scaled_size(img: Image, new_width: int) -> (int, int):
     return new_width, round(new_width*img.height/img.width)
 
 
-def generate_jpeg_thumbnails(img: Image, filepath: Path) -> None:
-    thumbnail_path = Path(filepath.parent, filepath.stem + '_resized_thumbnail.jpg')
-    preview_path = Path(filepath.parent, filepath.stem + '_resized_preview.jpg')
+def set_jpeg_thumbnail(filepath: Path, thumbnail_path: Path):
+    run([
+        'exiftool',
+        '-overwrite_original_in_place',
+        f'-ThumbnailImage<={thumbnail_path.as_posix()}',
+        filepath.as_posix()
+    ], capture_output=True).check_returncode()
+    thumbnail_path.unlink()
 
+
+def generate_and_set_jpeg_thumbnails(img: Image, filepath: Path) -> None:
+    thumbnail_path = Path(filepath.parent, filepath.stem + '_thumbnail.jpg')
     generate_jpeg_thumbnail(img, thumbnail_path, 160, 120)
-    generate_jpeg_thumbnail(img, preview_path, 320, 240)
-
+    set_jpeg_thumbnail(filepath, thumbnail_path)
 
 
 def generate_jpeg_thumbnail(img: Image, path: Path, width: int, height: int):
@@ -111,7 +121,7 @@ def generate_jpeg_thumbnail(img: Image, path: Path, width: int, height: int):
     thumbnail.thumbnail(thumbnail_width, thumbnail_height)
     thumbnail.background_color = BLACK
     thumbnail.extent(width, height, 0, thumbnail_height_offset)
-    thumbnail.compression_quality = 75
+    thumbnail.compression_quality = 95
 
     thumbnail.save(filename=path.as_posix())
 
@@ -151,8 +161,8 @@ def imorph(path: str):
             if isinstance(entry, DirEntry) and is_jpeg(entry):
                 with Image(filename=entry.path) as img:
                     if is_anamorphic(img):
-                        rescale_jpeg(img, Path(entry.path))
-                        generate_jpeg_thumbnails(img, Path(entry.path))
+                        new_path = rescale_jpeg(img, Path(entry.path))
+                        generate_and_set_jpeg_thumbnails(img, new_path)
 
 
 if __name__ == '__main__':
