@@ -108,7 +108,7 @@ def adjust_exif(img: Image, width: int, height: int):
 
 
 def rescale_srbg_or_adobergb_jpeg(img: Image, filepath: Path) -> Optional[Path]:
-    new_height, new_width = calculate_new_size(img)
+    new_width, new_height = calculate_new_size(img)
     new_path = Path(filepath.parent, filepath.stem + '_resized.jpg')
 
     if has_srgb_colorspace(img):
@@ -145,16 +145,18 @@ def generate_and_set_jpeg_thumbnails(img: Image, filepath: Path) -> None:
     set_jpeg_thumbnail(filepath, thumbnail_path)
 
 
-def generate_jpeg_thumbnail(img: Image, path: Path, width: int, height: int):
+def generate_jpeg_thumbnail(img: Image, path: Path, width: int, height: int = None):
     thumbnail = img.clone()
+    thumbnail.format = 'jpeg'
+    thumbnail.compression_quality = 95
 
     thumbnail_width, thumbnail_height = get_scaled_size(thumbnail, width)
-    thumbnail_height_offset = round((height - thumbnail_height) / 2) * -1
-
     thumbnail.thumbnail(thumbnail_width, thumbnail_height)
-    thumbnail.background_color = BLACK
-    thumbnail.extent(width, height, 0, thumbnail_height_offset)
-    thumbnail.compression_quality = 95
+
+    if height is not None and height > thumbnail_height:
+        thumbnail_height_offset = round((height - thumbnail_height) / 2) * -1
+        thumbnail.background_color = BLACK
+        thumbnail.extent(width, height, 0, thumbnail_height_offset)
 
     thumbnail.save(filename=path.as_posix())
 
@@ -169,7 +171,7 @@ def calculate_new_size(img: Image) -> Tuple[int, int]:
         new_width = round(img.width * ANAMORPHIC_SCALE_FACTOR)
         new_height = img.height
 
-    return new_height, new_width
+    return new_width, new_height
 
 
 def resize_srgb(img: Image, new_width: int, new_height: int):
@@ -203,9 +205,40 @@ def handle_raf(filepath: Path):
         if is_anamorphic(img):
             converted_dng_path = convert_raf(filepath)
             set_dng_anamorphic_ratio(converted_dng_path)
+            add_thumbnails_to_dng(img, converted_dng_path)
 
 
-def convert_raf(filepath: Path) -> str:
+def add_thumbnails_to_dng(img: Image, filepath: Path):
+    jpeg = img.clone()
+    jpeg.format = 'jpeg'
+    jpeg.compression_quality = 95
+    width, height = calculate_new_size(img)
+    resize_srgb(jpeg, width, height)
+
+    preview_path = Path(filepath.parent, filepath.stem + '_PreviewImage.jpg')
+    generate_jpeg_thumbnail(jpeg, preview_path, 1024)
+
+    run([
+        'exiftool',
+        '-overwrite_original_in_place',
+        f'-PreviewImage<={preview_path.as_posix()}',
+        filepath.as_posix()
+    ], capture_output=False).check_returncode()
+    preview_path.unlink()
+
+    jpeg_path = Path(filepath.parent, filepath.stem + '_JpgFromRaw.jpg')
+    jpeg.save(filename=jpeg_path.as_posix())
+
+    run([
+        'exiftool',
+        '-overwrite_original_in_place',
+        f'-JpgFromRaw<={jpeg_path.as_posix()}',
+        filepath.as_posix()
+    ]).check_returncode()
+    jpeg_path.unlink()
+
+
+def convert_raf(filepath: Path) -> Path:
     run([
         '/Applications/Adobe DNG Converter.app/Contents/MacOS/Adobe DNG Converter',
         '-p2',
