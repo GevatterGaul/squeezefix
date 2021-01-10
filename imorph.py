@@ -201,30 +201,47 @@ def handle_jpeg(filepath: Path):
 def handle_raf(filepath: Path):
     with Image(filename=filepath.as_posix()) as img:
         if is_anamorphic(img):
-            convert_raf(filepath)
+            converted_dng_path = convert_raf(filepath)
+            set_dng_anamorphic_ratio(converted_dng_path)
 
 
-def convert_raf(filepath: Path):
+def convert_raf(filepath: Path) -> str:
     run([
         '/Applications/Adobe DNG Converter.app/Contents/MacOS/Adobe DNG Converter',
         '-p2',
         filepath.as_posix()
     ], capture_output=True).check_returncode()
 
+    return Path(filepath.parent, filepath.stem + '.dng')
 
-def imorph(path: str):
+
+def set_dng_anamorphic_ratio(filepath: Path):
+    run([
+        'exiftool',
+        '-overwrite_original_in_place',
+        f'-DefaultScale={ANAMORPHIC_SCALE_FACTOR} 1',
+        filepath.as_posix()
+    ], capture_output=True).check_returncode()
+
+
+
+def imorph(path: str, only_jpegs: bool = False, only_raws: bool = False):
     with scandir(path) as dir:
         for entry in dir:
             if isinstance(entry, DirEntry):
-                if is_jpeg(entry):
-                    handle_jpeg(Path(entry.path))
-                elif is_raf(entry):
-                    handle_raf(Path(entry.path))
+                filepath = Path(entry.path)
+
+                if is_jpeg(entry) and not only_raws:
+                    handle_jpeg(filepath)
+                elif is_raf(entry) and not only_jpegs:
+                    handle_raf(filepath)
 
 
 if __name__ == '__main__':
     parser = ArgumentParser()
-    parser.add_argument("path")
+    parser.add_argument('path')
+    parser.add_argument('-j', '--only-jpeg', help='Only consider jpeg images', action='store_true')
+    parser.add_argument('-r', '--only-raw', help='Only consider raw images', action='store_true')
     args = parser.parse_args()
 
-    imorph(args.path)
+    imorph(args.path, args.only_jpeg, args.only_raw)
