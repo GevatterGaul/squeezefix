@@ -87,6 +87,33 @@ def rescale_jpeg(img: Image, filepath: Path) -> None:
     img.save(filename=new_path.as_posix())
 
 
+def get_scaled_size(img: Image, new_width: int) -> (int, int):
+    return new_width, round(new_width*img.height/img.width)
+
+
+def generate_jpeg_thumbnails(img: Image, filepath: Path) -> None:
+    thumbnail_path = Path(filepath.parent, filepath.stem + '_resized_thumbnail.jpg')
+    preview_path = Path(filepath.parent, filepath.stem + '_resized_preview.jpg')
+
+    generate_jpeg_thumbnail(img, thumbnail_path, 160, 120)
+    generate_jpeg_thumbnail(img, preview_path, 320, 240)
+
+
+
+def generate_jpeg_thumbnail(img: Image, path: Path, width: int, height: int):
+    thumbnail = img.clone()
+
+    thumbnail_width, thumbnail_height = get_scaled_size(thumbnail, width)
+    thumbnail_height_offset = round((height - thumbnail_height) / 2) * -1
+
+    thumbnail.thumbnail(thumbnail_width, thumbnail_height)
+    thumbnail.background_color = 'black'
+    thumbnail.extent(width, height, 0, thumbnail_height_offset)
+    thumbnail.compression_quality = 75
+
+    thumbnail.save(filename=path.as_posix())
+
+
 def calculate_new_size(img: Image) -> Tuple[int, int]:
     is_portrait = img.width < img.height
 
@@ -123,6 +150,7 @@ def imorph(path: str):
                 with Image(filename=entry.path) as img:
                     if is_anamorphic(img):
                         rescale_jpeg(img, Path(entry.path))
+                        generate_jpeg_thumbnails(img, Path(entry.path))
 
 
 if __name__ == '__main__':
