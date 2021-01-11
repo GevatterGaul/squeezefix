@@ -18,6 +18,8 @@ The requirements for MacOS:
 brew install exiftool imagemagick ufraw python pipenv
 ```
 
+You also need the Adobe Digital Negative Converter.
+
 # Setup
 
 Clone the repository to a directory. There, execute:
