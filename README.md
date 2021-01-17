@@ -4,6 +4,10 @@ Script to resize and sort Fuji JPEG and RAW files that have been captured with a
 
 The intended use case is to run the script over a directory of original files. Then import the resulting files into your raw converter of choice.
 
+# Implementation Details
+
+For some details on the implementation and its tradeoffs, go to the [announcement post](https://boredconsultant.com/2021/01/17/De-squeeze-anamorphic-images-with-squeezefix/).
+
 # Compatibility
 
 Developed for Fuji Cameras and SIRUI anamorphic lenses.
