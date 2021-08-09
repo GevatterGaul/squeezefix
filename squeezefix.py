@@ -30,8 +30,8 @@ def is_raf(file: DirEntry) -> bool:
     return name.endswith('.raf')
 
 
-def convert_raf_fnumber(s: str) -> Union[float, None]:
-    if s == 'F/nan':
+def convert_dng_fnumber(s: str) -> Union[float, None]:
+    if s == 'F/nan' or s == 'F/1,0':
         return None
 
     _, fnum = s.split('/')
@@ -48,11 +48,11 @@ def convert_jpeg_fnumber(s: str) -> Union[float, None]:
 
 def convert_fnumber(s: str) -> Union[float, None]:
     if s.startswith('F'):
-        return convert_raf_fnumber(s)
+        return convert_dng_fnumber(s)
     return convert_jpeg_fnumber(s)
 
 
-def convert_raf_focallength(s: str) -> int:
+def convert_dng_focallength(s: str) -> int:
     flength, _ = s.split(',')
     return int(flength)
 
@@ -64,12 +64,12 @@ def convert_jpeg_focallength(s: str) -> int:
 
 def convert_focallength(s: str):
     if s.endswith('mm'):
-        return convert_raf_focallength(s)
+        return convert_dng_focallength(s)
     return convert_jpeg_focallength(s)
 
 
 def is_anamorphic(img: Image) -> bool:
-    if img.format == 'RAF':
+    if img.format == 'DNG':
         focal_length_match = 'dng:FocalLength' in img.metadata and \
                              convert_focallength(img.metadata['dng:FocalLength']) in POSSIBLE_ANAMORPHIC_FOCAL_LENGTHS
         fnumber_match = 'dng:Aperture' in img.metadata and convert_fnumber(img.metadata['dng:Aperture']) is None
@@ -217,9 +217,10 @@ def handle_jpeg(filepath: Path, move_original: bool = False):
 
 
 def handle_raf(filepath: Path, move_original: bool = False):
-    with Image(filename=filepath.as_posix()) as img:
+    converted_dng_path = convert_raf(filepath)
+
+    with Image(filename=converted_dng_path.as_posix()) as img:
         if is_anamorphic(img):
-            converted_dng_path = convert_raf(filepath)
             set_dng_anamorphic_ratio(converted_dng_path)
             add_thumbnails_to_dng(img, converted_dng_path)
 
@@ -230,6 +231,8 @@ def handle_raf(filepath: Path, move_original: bool = False):
                 print(f'Processed "{filepath.as_posix()}", original at {target_filepath.as_posix()}')
             else:
                 print(f'Processed "{filepath.as_posix()}"')
+        else:
+            converted_dng_path.unlink()
 
 
 def add_thumbnails_to_dng(img: Image, filepath: Path):
