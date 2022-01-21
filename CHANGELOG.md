@@ -1,6 +1,6 @@
 # Changelog
 
-## Version [v1.0.0]
+## [1.0.0] - 2022-01-21
 
 ### Added
 
