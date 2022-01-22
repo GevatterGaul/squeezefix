@@ -6,8 +6,8 @@ from typing import Optional
 from wand.image import Image
 from wand.color import Color
 
-from colorspace import has_adobergb_colorspace, has_srgb_colorspace
-from helpers import ensure_originals_folder
+from squeezefix.colorspace import has_adobergb_colorspace, has_srgb_colorspace
+from squeezefix.helpers import ensure_originals_folder
 from metadata import is_anamorphic, adjust_exif, calculate_new_size, get_scaled_size
 
 

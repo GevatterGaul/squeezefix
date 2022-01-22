@@ -4,9 +4,9 @@ from subprocess import run
 
 from wand.image import Image
 
-from helpers import ensure_originals_folder
-from jpeg import generate_jpeg_thumbnail, set_and_delete_jpeg_thumbnail, resize_srgb
-from metadata import is_anamorphic, calculate_new_size, ANAMORPHIC_SCALE_FACTOR
+from squeezefix.helpers import ensure_originals_folder
+from squeezefix.jpeg import generate_jpeg_thumbnail, set_and_delete_jpeg_thumbnail, resize_srgb
+from squeezefix.metadata import is_anamorphic, calculate_new_size, ANAMORPHIC_SCALE_FACTOR
 
 
 def handle_raf(filepath: Path, move_original: bool = False):

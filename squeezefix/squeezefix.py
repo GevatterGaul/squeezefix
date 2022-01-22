@@ -4,9 +4,9 @@ from os import scandir
 from posix import DirEntry
 from pathlib import Path
 
-from helpers import is_raf, is_jpeg
-from jpeg import handle_jpeg
-from raf import handle_raf
+from squeezefix.helpers import is_raf, is_jpeg
+from squeezefix.jpeg import handle_jpeg
+from squeezefix.raf import handle_raf
 
 
 def imorph(path: str, no_jpegs: bool = False, no_raws: bool = False, move_originals: bool = False):
