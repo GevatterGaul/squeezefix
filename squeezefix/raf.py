@@ -1,3 +1,5 @@
+""" raf image helper functions """
+
 from pathlib import Path
 from shutil import move
 from subprocess import run
@@ -6,7 +8,7 @@ from wand.image import Image
 
 from squeezefix.helpers import ensure_originals_folder
 from squeezefix.jpeg import generate_jpeg_thumbnail, set_and_delete_jpeg_thumbnail, resize_srgb
-from squeezefix.metadata import is_anamorphic, calculate_new_size, ANAMORPHIC_SCALE_FACTOR
+from squeezefix.metadata import is_anamorphic, calculate_desqueezed_size, ANAMORPHIC_SCALE_FACTOR
 
 
 def handle_raf(filepath: Path, move_original: bool = False):
@@ -44,7 +46,7 @@ def generate_jpeg_from_raw(img: Image):
     jpeg = img.clone()
     jpeg.format = 'jpeg'
     jpeg.compression_quality = 95
-    width, height = calculate_new_size(img)
+    width, height = calculate_desqueezed_size(img)
     resize_srgb(jpeg, width, height)
     return jpeg
 
@@ -54,7 +56,7 @@ def convert_raf(filepath: Path) -> Path:
         '/Applications/Adobe DNG Converter.app/Contents/MacOS/Adobe DNG Converter',
         '-p2',
         filepath.as_posix()
-    ], capture_output=True).check_returncode()
+    ], capture_output=True, check=True)
 
     return Path(filepath.parent, filepath.stem + '.dng')
 
@@ -65,4 +67,4 @@ def set_dng_anamorphic_ratio(filepath: Path):
         '-overwrite_original_in_place',
         f'-DefaultScale={ANAMORPHIC_SCALE_FACTOR} 1',
         filepath.as_posix()
-    ], capture_output=True).check_returncode()
+    ], capture_output=True, check=True)

@@ -1,3 +1,5 @@
+""" jpeg image helper functions """
+
 from pathlib import Path
 from shutil import move
 from subprocess import run
@@ -8,7 +10,7 @@ from wand.color import Color
 
 from squeezefix.colorspace import has_adobergb_colorspace, has_srgb_colorspace
 from squeezefix.helpers import ensure_originals_folder
-from metadata import is_anamorphic, adjust_exif, calculate_new_size, get_scaled_size
+from squeezefix.metadata import is_anamorphic, adjust_exif, calculate_desqueezed_size, get_scaled_size
 
 
 JPEG_COMPRESSION_QUALITY = 95
@@ -18,6 +20,10 @@ BLACK = Color('black')
 
 
 def resize_srgb(img: Image, new_width: int, new_height: int):
+    """ Resize sRGB image with colospace conversion
+
+    Just resizing would destroy image data. See: https://legacy.imagemagick.org/Usage/resize/#resize_colorspace
+    """
     img.depth = 16
     img.transform_colorspace('rgb')
     img.resize(new_width, new_height, filter='lanczos2')
@@ -26,6 +32,10 @@ def resize_srgb(img: Image, new_width: int, new_height: int):
 
 
 def resize_adobergb(img: Image, new_width: int, new_height: int):
+    """ Resize AdobeRGB image with colorspace correction
+
+    Just resizing would destroy image data. See: https://legacy.imagemagick.org/Usage/resize/#resize_colorspace
+    """
     img.depth = 16
     img.gamma(LINEAR_RGB_GAMMA)
     img.resize(new_width, new_height, filter='lanczos2')
@@ -34,7 +44,7 @@ def resize_adobergb(img: Image, new_width: int, new_height: int):
 
 
 def rescale_srbg_or_adobergb_jpeg(img: Image, filepath: Path) -> Optional[Path]:
-    new_width, new_height = calculate_new_size(img)
+    new_width, new_height = calculate_desqueezed_size(img)
     new_path = Path(filepath.parent, filepath.stem + '_resized.jpg')
 
     if has_srgb_colorspace(img):
@@ -63,7 +73,7 @@ def set_and_delete_jpeg_thumbnail(filepath: Path, thumbnail_path: Path, thumbnai
         '-overwrite_original_in_place',
         f'-{thumbnail_id}<={thumbnail_path.as_posix()}',
         filepath.as_posix()
-    ], capture_output=True).check_returncode()
+    ], capture_output=True, check=True)
     thumbnail_path.unlink()
 
 

@@ -8,6 +8,13 @@ The intended use case is to run the script over a directory of original files. T
 
 For some details on the implementation and its tradeoffs, go to the [announcement post](https://boredconsultant.com/2021/01/17/De-squeeze-anamorphic-images-with-squeezefix/).
 
+## Metadata formats
+
+There are a bunch of different metadata formats and their representation in various libraries is confusing. Here are some places to start:
+
+- https://exiftool.org/TagNames/EXIF.html
+- https://www.adobe.com/content/dam/acom/en/products/photoshop/pdfs/dng_spec_1.4.0.0.pdf
+
 # Compatibility
 
 Developed for Fuji Cameras and SIRUI anamorphic lenses.

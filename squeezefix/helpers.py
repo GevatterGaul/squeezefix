@@ -1,3 +1,5 @@
+""" File handling helper functions """
+
 from posix import DirEntry
 from pathlib import Path
 

@@ -1,4 +1,7 @@
 #!/usr/local/bin/python3
+""" De-squeeze images shot on anamorphic lenses """
+
+
 from argparse import ArgumentParser
 from os import scandir
 from posix import DirEntry
@@ -10,8 +13,8 @@ from squeezefix.raf import handle_raf
 
 
 def imorph(path: str, no_jpegs: bool = False, no_raws: bool = False, move_originals: bool = False):
-    with scandir(path) as dir:
-        for entry in dir:
+    with scandir(path) as image_dir:
+        for entry in image_dir:
             if isinstance(entry, DirEntry):
                 filepath = Path(entry.path)
 
