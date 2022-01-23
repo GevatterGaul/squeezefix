@@ -44,7 +44,7 @@ pipenv install
 Convert all files in the ```raw``` directory and save the original files in ```raw/originals```:
 
 ```bash
-python squeezefix.py -m raw/
+python squeezefix/squeezefix.py -m raw/
 ```
 
 Other options:

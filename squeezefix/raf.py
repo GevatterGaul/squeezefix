@@ -1,21 +1,21 @@
 """ raf image helper functions """
-
 from pathlib import Path
 from shutil import move
 from subprocess import run
+from typing import Dict
 
 from wand.image import Image
 
-from squeezefix.helpers import ensure_originals_folder
-from squeezefix.jpeg import generate_jpeg_thumbnail, set_and_delete_jpeg_thumbnail, resize_srgb
-from squeezefix.metadata import is_anamorphic, calculate_desqueezed_size, ANAMORPHIC_SCALE_FACTOR
+from helpers import ensure_originals_folder
+from jpeg import generate_jpeg_thumbnail, set_and_delete_jpeg_thumbnail, resize_srgb
+from metadata import is_anamorphic, calculate_desqueezed_size, ANAMORPHIC_SCALE_FACTOR
 
 
-def handle_raf(filepath: Path, move_original: bool = False):
-    converted_dng_path = convert_raf(filepath)
+def handle_raf(filepath: Path, image_metadata: Dict, move_original: bool = False):
+    if is_anamorphic(image_metadata):
+        converted_dng_path = convert_raf(filepath)
 
-    with Image(filename=converted_dng_path.as_posix()) as img:
-        if is_anamorphic(img):
+        with Image(filename=converted_dng_path.as_posix()) as img:
             set_dng_anamorphic_ratio(converted_dng_path)
             add_thumbnails_to_dng(img, converted_dng_path)
 
@@ -26,8 +26,6 @@ def handle_raf(filepath: Path, move_original: bool = False):
                 print(f'Processed "{filepath.as_posix()}", original at {target_filepath.as_posix()}')
             else:
                 print(f'Processed "{filepath.as_posix()}"')
-        else:
-            converted_dng_path.unlink()
 
 
 def add_thumbnails_to_dng(img: Image, filepath: Path):

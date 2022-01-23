@@ -7,9 +7,9 @@ from os import scandir
 from posix import DirEntry
 from pathlib import Path
 
-from squeezefix.helpers import is_raf, is_jpeg
-from squeezefix.jpeg import handle_jpeg
-from squeezefix.raf import handle_raf
+from jpeg import handle_jpeg
+from raf import handle_raf
+from exiftool import get_metadata
 
 
 def imorph(path: str, no_jpegs: bool = False, no_raws: bool = False, move_originals: bool = False):
@@ -17,15 +17,16 @@ def imorph(path: str, no_jpegs: bool = False, no_raws: bool = False, move_origin
         for entry in image_dir:
             if isinstance(entry, DirEntry):
                 filepath = Path(entry.path)
+                image_metadata = get_metadata(filepath)
 
-                if is_jpeg(entry):
+                if image_metadata['FileType'] == 'JPEG':
                     if not no_jpegs:
-                        handle_jpeg(filepath, move_originals)
+                        handle_jpeg(filepath, image_metadata, move_originals)
                     else:
                         print(f'Skipping "{filepath.as_posix()}": JPEG files will not be processed')
-                elif is_raf(entry):
+                elif image_metadata['FileType'] == 'RAF':
                     if not no_raws:
-                        handle_raf(filepath, move_originals)
+                        handle_raf(filepath, image_metadata, move_originals)
                     else:
                         print(f'Skipping "{filepath.as_posix()}": RAF files will not be processed')
                 else:

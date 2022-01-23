@@ -3,14 +3,14 @@
 from pathlib import Path
 from shutil import move
 from subprocess import run
-from typing import Optional
+from typing import Optional, Dict
 
 from wand.image import Image
 from wand.color import Color
 
-from squeezefix.colorspace import has_adobergb_colorspace, has_srgb_colorspace
-from squeezefix.helpers import ensure_originals_folder
-from squeezefix.metadata import is_anamorphic, adjust_exif, calculate_desqueezed_size, get_scaled_size
+from colorspace import has_adobergb_colorspace, has_srgb_colorspace
+from helpers import ensure_originals_folder
+from metadata import is_anamorphic, adjust_exif, calculate_desqueezed_size, get_scaled_size
 
 
 JPEG_COMPRESSION_QUALITY = 95
@@ -43,11 +43,11 @@ def resize_adobergb(img: Image, new_width: int, new_height: int):
     img.depth = 8
 
 
-def rescale_srbg_or_adobergb_jpeg(img: Image, filepath: Path) -> Optional[Path]:
+def rescale_srbg_or_adobergb_jpeg(img: Image, image_metadata: Dict, filepath: Path) -> Optional[Path]:
     new_width, new_height = calculate_desqueezed_size(img)
     new_path = Path(filepath.parent, filepath.stem + '_resized.jpg')
 
-    if has_srgb_colorspace(img):
+    if has_srgb_colorspace(image_metadata):
         resize_op = resize_srgb
     else:
         resize_op = resize_adobergb
@@ -93,11 +93,11 @@ def generate_jpeg_thumbnail(img: Image, path: Path, width: int, height: int = No
     thumbnail.save(filename=path.as_posix())
 
 
-def handle_jpeg(filepath: Path, move_original: bool = False):
-    with Image(filename=filepath.as_posix()) as img:
-        if is_anamorphic(img):
-            if (has_srgb_colorspace(img) or has_adobergb_colorspace(img)):
-                new_path = rescale_srbg_or_adobergb_jpeg(img, filepath)
+def handle_jpeg(filepath: Path, image_metadata: Dict, move_original: bool = False):
+    if is_anamorphic(image_metadata):
+        if (has_srgb_colorspace(image_metadata) or has_adobergb_colorspace(image_metadata)):
+            with Image(filename=filepath.as_posix()) as img:
+                new_path = rescale_srbg_or_adobergb_jpeg(img, image_metadata, filepath)
                 generate_and_set_jpeg_thumbnails(img, new_path)
 
                 if move_original:
@@ -108,5 +108,5 @@ def handle_jpeg(filepath: Path, move_original: bool = False):
                     print(f'Processed "{filepath.as_posix()}", original at {target_filepath.as_posix()}')
                 else:
                     print(f'Processed "{filepath.as_posix()}"')
-            else:
-                print(f'Skipping "{filepath.as_posix()}": unknown color space')
+        else:
+            print(f'Skipping "{filepath.as_posix()}": unknown color space')
