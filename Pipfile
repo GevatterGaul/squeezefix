@@ -14,4 +14,4 @@ pylint = "2.12.2"
 python_version = "3.9"
 
 [scripts]
-linter = "pylint squeezefix"
+linter = "pylint lib squeezefix.py"

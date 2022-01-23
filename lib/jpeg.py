@@ -8,9 +8,9 @@ from typing import Optional, Dict
 from wand.image import Image
 from wand.color import Color
 
-from colorspace import has_adobergb_colorspace, has_srgb_colorspace
-from helpers import ensure_originals_folder
-from metadata import is_anamorphic, adjust_exif, calculate_desqueezed_size, get_scaled_size
+from .colorspace import has_adobergb_colorspace, has_srgb_colorspace
+from .helpers import ensure_originals_folder
+from .metadata import is_anamorphic, adjust_exif, calculate_desqueezed_size, get_scaled_size
 
 
 JPEG_COMPRESSION_QUALITY = 95

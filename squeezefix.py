@@ -7,9 +7,9 @@ from os import scandir
 from posix import DirEntry
 from pathlib import Path
 
-from jpeg import handle_jpeg
-from raf import handle_raf
-from exiftool import get_metadata
+from lib.jpeg import handle_jpeg
+from lib.raf import handle_raf
+from lib.exiftool import get_metadata
 
 
 def imorph(path: str, no_jpegs: bool = False, no_raws: bool = False, move_originals: bool = False):

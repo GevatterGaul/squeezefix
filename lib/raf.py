@@ -6,9 +6,9 @@ from typing import Dict
 
 from wand.image import Image
 
-from helpers import ensure_originals_folder
-from jpeg import generate_jpeg_thumbnail, set_and_delete_jpeg_thumbnail, resize_srgb
-from metadata import is_anamorphic, calculate_desqueezed_size, ANAMORPHIC_SCALE_FACTOR
+from .helpers import ensure_originals_folder
+from .jpeg import generate_jpeg_thumbnail, set_and_delete_jpeg_thumbnail, resize_srgb
+from .metadata import is_anamorphic, calculate_desqueezed_size, ANAMORPHIC_SCALE_FACTOR
 
 
 def handle_raf(filepath: Path, image_metadata: Dict, move_original: bool = False):
