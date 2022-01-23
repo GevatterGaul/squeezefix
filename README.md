@@ -19,7 +19,15 @@ There are a bunch of different metadata formats and their representation in vari
 
 Developed for Fuji Cameras and SIRUI anamorphic lenses.
 
-Tested on Fuji X-T10 and SIRUI 50mm 1.8 anamorphic (squeeze factor 1.33).
+## Cameras
+
+- Fujifilm X-T10
+- Fujifilm X-T4
+
+# Lenses
+
+- SIRUI 50mm anamorphic
+- SIRUI 24mm anamorphic
 
 # Requirements
 
